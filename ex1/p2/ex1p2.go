@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 )
 
 type args struct {
@@ -74,12 +75,14 @@ func poseProblem(p problem) bool {
 	return txt == p.answer
 }
 
-func poseQuiz(q *quiz) {
+func poseQuiz(q *quiz) string {
 	for _, p := range q.problems {
 		if poseProblem(p) {
 			q.correct++
 		}
 	}
+
+	return ""
 }
 
 func printResult(q quiz) {
@@ -89,8 +92,17 @@ func printResult(q quiz) {
 func main() {
 	args := parseArgs()
 	quiz := loadQuiz(args)
+	c1 := make(chan string, 1)
 
 	promptToBegin(quiz)
-	poseQuiz(&quiz)
-	printResult(quiz)
+
+	go poseQuiz(&quiz)
+
+	select {
+	case res := <-c1:
+		_ = res
+		printResult(quiz)
+	case <-time.After(time.Second * time.Duration(args.timeout)):
+		printResult(quiz)
+	}
 }
