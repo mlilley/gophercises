@@ -18,7 +18,7 @@ type args struct {
 
 func parseArgs() args {
 	f := flag.String("f", "problems.csv", "Name of quiz CSV file")
-	t := flag.Int("t", 30, "Quiz time limit (0 for none)")
+	t := flag.Int("t", 30, "Quiz time limit")
 	flag.Parse()
 	return args{filename: *f, timeout: *t}
 }
