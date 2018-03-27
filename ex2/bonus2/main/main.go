@@ -7,17 +7,25 @@ import (
 	"log"
 	"net/http"
 
-	urlshort "github.com/mlilley/gophercises/ex2/bonus1"
+	urlshort "github.com/mlilley/gophercises/ex2/bonus2"
 )
 
 type args struct {
-	filename string
+	filename   string
+	configType string
 }
 
 func parseArgs() args {
-	f := flag.String("f", "config.yaml", "Name of configuration input file")
+	y := flag.String("yaml", "", "Name of yaml configuration input file")
+	j := flag.String("json", "", "Name of json configuration input file")
 	flag.Parse()
-	return args{filename: *f}
+	if *y == *j {
+		log.Fatal("Specify one, and only one, of json or yaml arguments")
+	}
+	if *y != "" {
+		return args{filename: *y, configType: "yaml"}
+	}
+	return args{filename: *j, configType: "json"}
 }
 
 func loadConfig(filename string) []byte {
@@ -39,15 +47,23 @@ func main() {
 	}
 	mapHandler := urlshort.MapHandler(pathsToUrls, mux)
 
-	// Build the YAMLHandler using the mapHandler as the
-	// fallback
-	yaml := loadConfig(args.filename)
-	yamlHandler, err := urlshort.YAMLHandler([]byte(yaml), mapHandler)
-	if err != nil {
-		panic(err)
+	config := loadConfig(args.filename)
+	var handler http.HandlerFunc
+	var err error
+	if args.configType == "yaml" {
+		handler, err = urlshort.YAMLHandler([]byte(config), mapHandler)
+	} else if args.configType == "json" {
+		handler, err = urlshort.JSONHandler([]byte(config), mapHandler)
+	} else {
+		log.Fatal("Unrecognised configuration file type")
 	}
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	fmt.Println("Starting the server on :8080")
-	http.ListenAndServe(":8080", yamlHandler)
+	http.ListenAndServe(":8080", handler)
 }
 
 func defaultMux() *http.ServeMux {
