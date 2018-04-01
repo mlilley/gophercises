@@ -13,14 +13,13 @@ import (
 // http.Handler will be called instead.
 func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.HandlerFunc {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		v, p := pathsToUrls[r.RequestURI]
-		if p {
-			fmt.Printf("%v -> %v\n", r.RequestURI, v)
-			http.Redirect(w, r, v, 307) // temporary
-		} else {
-			fmt.Printf("%v -> *unrecognised*\n", r.RequestURI)
-			fallback.ServeHTTP(w, r)
+		if url, ok := pathsToUrls[r.RequestURI]; ok {
+			fmt.Printf("%v -> %v\n", r.RequestURI, url)
+			http.Redirect(w, r, url, 307) // temporary
+			return
 		}
+		fmt.Printf("%v -> *unrecognised*\n", r.RequestURI)
+		fallback.ServeHTTP(w, r)
 	})
 	return h
 }
